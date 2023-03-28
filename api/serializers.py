@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from book.models import Book, Author
+from djoser.serializers import UserCreateSerializer
 
 
 class BookCreateSerializer(serializers.ModelSerializer):
@@ -19,20 +20,38 @@ class CreateAuthorSerializer(serializers.ModelSerializer):
         model = Author
         fields = ["id", "first_name", "last_name", "date_of_birth", "date_of_death"]
 
+    date_of_birth = serializers.DateTimeField(read_only=True)
+    date_of_death = serializers.DateTimeField(read_only=True)
+
 
 class BookSerializer(serializers.ModelSerializer):
-    author = serializers.StringRelatedField()
+    # author = serializers.StringRelatedField()
+    author = AuthorSerializer()
 
     class Meta:
         model = Book
-        # fields = ["id", "title", "isbn", "description"]
-        fields = ["id", "title", "description", "author"]
+        fields = ["id", "title", "description", "author", "price", "discount_price", "date_added"]
+
+        author = serializers.HyperlinkedRelatedField(
+            queryset=Author.objects.all(),
+            view_name="author-detail",
+        )
+    date_added = serializers.DateTimeField(read_only=True)
+    discount_price = serializers.SerializerMethodField(method_name="discount")
+
+    def discount(self, book: Book):
+        return book.price * 25 / 100
 
 
 class CreateBookSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
-        fields = ["id", "title", "isbn", "description", "author"]
+        fields = ["id", "title", "isbn", "description", "author", "genre", "price", "discount_price", "language"]
+
+
+class CreateLibraryUserSerializer(UserCreateSerializer):
+    class Meta(UserCreateSerializer.Meta):
+        fields = ["id", "username", "email", "password", "first_name", "last_name"]
 
 # class BookSerializer(serializers.ModelSerializer):
 #     author = AuthorSerializer()
